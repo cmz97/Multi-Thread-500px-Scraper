@@ -90,10 +90,69 @@ git clone https://github.com/cmz97/Multi-Thread-500px-Scraper.git
 
 <!-- USAGE EXAMPLES -->
 ## Usage
+```sh
+  python3 500pxScraperParallelProcess 'kordan'
+```
+This will download all the picture from user ```kordan``` to directory ```./kordan```. In which there is two folder named ```./kordan/nsfw``` for image that is NSFW and ```./kordan/sfw``` for image that is SFW
 
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.
+The program has only one required input, ```USERNAME```, which is the exact username of your target on 500px.
+For example, ```https://500px.com/kordan``` has a username that is ```kordan```
+Please always refer to the username from the URL.
 
+Optional argument is defined as follow
+```sh
+500pxScraperParallelProcess.py -h
+usage: 500pxScraperParallelProcess.py [-h] [--MIN_WIDTH MIN_WIDTH]
+                                      [--MIN_HEIGHT MIN_HEIGHT]
+                                      [--MAX_RECAPTURE_TIME MAX_RECAPTURE_TIME]
+                                      [--INFINITE_SCROLL_LOAD_WAIT_TIME INFINITE_SCROLL_LOAD_WAIT_TIME]
+                                      [--INFINITE_SCROLL_END_CONFIRM_REDUN INFINITE_SCROLL_END_CONFIRM_REDUN]
+                                      [--IMAGE_PAGE_LOAD_TIMEOUT IMAGE_PAGE_LOAD_TIMEOUT]
+                                      [--PORTFOLIO_PAGE_LOAD_TIMEOUT PORTFOLIO_PAGE_LOAD_TIMEOUT]
+                                      [--STUCK_REFRESH_INTERVAL STUCK_REFRESH_INTERVAL]
+                                      [--DEBUG_FLAG DEBUG_FLAG]
+                                      [--SHOW_BROWSER SHOW_BROWSER]
+                                      [--NUM_OF_THREAD NUM_OF_THREAD]
+                                      [--IMAGE_FETCH_WAIT IMAGE_FETCH_WAIT]
+                                      USER_NAME
 
+Selenium based mutilthreaded image scraper for 500px.com
+
+positional arguments:
+  USER_NAME             username from 500px, must be exact
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --MIN_WIDTH MIN_WIDTH
+                        Minimum width of the image to feteched
+  --MIN_HEIGHT MIN_HEIGHT
+                        Minimum height of the image to feteched
+  --MAX_RECAPTURE_TIME MAX_RECAPTURE_TIME
+                        Max number of time to try to recapture
+  --INFINITE_SCROLL_LOAD_WAIT_TIME INFINITE_SCROLL_LOAD_WAIT_TIME
+                        Time in second that the infinite scroll function wait
+                        per scroll down motion that allow page to load
+  --INFINITE_SCROLL_END_CONFIRM_REDUN INFINITE_SCROLL_END_CONFIRM_REDUN
+                        usage refer to github page
+  --IMAGE_PAGE_LOAD_TIMEOUT IMAGE_PAGE_LOAD_TIMEOUT
+                        Time out in second used by the image fetecher,
+                        fetecher re-fectech the image after timed out
+  --PORTFOLIO_PAGE_LOAD_TIMEOUT PORTFOLIO_PAGE_LOAD_TIMEOUT
+                        Time out in second used by the portfolio list
+                        fetecher, fetecher re-fectech the image list after
+                        timed out
+  --STUCK_REFRESH_INTERVAL STUCK_REFRESH_INTERVAL
+                        Time in second that the process wait when a page is
+                        unresponsive, i.e, passed the timeout value
+  --DEBUG_FLAG DEBUG_FLAG
+                        Toggle Verbose Debug Information Display
+  --SHOW_BROWSER SHOW_BROWSER
+                        Toggle browser visibility
+  --NUM_OF_THREAD NUM_OF_THREAD
+                        Number of thread used in the program
+  --IMAGE_FETCH_WAIT IMAGE_FETCH_WAIT
+                        Time in second the thread wait per fetecher process
+```
 
 <!-- ROADMAP -->
 ## Roadmap

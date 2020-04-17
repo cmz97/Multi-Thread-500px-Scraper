@@ -15,21 +15,29 @@ import os
 from tqdm import tqdm
 from enum import Enum
 import threading
+import argparse
 
-MIN_WIDTH = 300
-MIN_HEIGHT = 300
-MAX_RECAPTURE_TIME = 5
-INFINITE_SCROLL_LOAD_WAIT_TIME = 2 #second
-INFINITE_SCROLL_END_CONFIRM_REDUN = 2 # check lenght now change twice
-IMAGE_PAGE_LOAD_TIMEOUT = 5
-PORTFOLIO_PAGE_LOAD_TIMEOUT = 10
-USER_NAME = "alex_borisov"
-STUCK_REFRESH_INTERVAL = 3
-DEBUG_FLAG = False
-SHOW_BROWSER = True
-NUM_OF_THREAD = 6
-IMAGE_FETCH_WAIT = 2 #Prevent Over Request
 
+def init_Parser():
+    argparse.ArgumentParser(description='Selenium based mutilthreaded image scraper for 500px.com')
+    parser = argparse.ArgumentParser(description='Selenium based mutilthreaded image scraper for 500px.com')
+    parser.add_argument('USER_NAME', type=str, help='username from 500px, must be exact')
+    parser.add_argument('--MIN_WIDTH', type=int, help='Minimum width of the image to feteched', action='store', default='300')
+    parser.add_argument('--MIN_HEIGHT', type=int, help='Minimum height of the image to feteched', action='store', default='300')
+    parser.add_argument('--MAX_RECAPTURE_TIME', type=int, help='Max number of time to try to recapture', action='store', default='5')
+    parser.add_argument('--INFINITE_SCROLL_LOAD_WAIT_TIME', type=int, help='Time in second that the infinite scroll function wait per scroll down motion that allow page to load', action='store', default='2')
+    parser.add_argument('--INFINITE_SCROLL_END_CONFIRM_REDUN', type=int, help='usage refer to github page', action='store', default='2')
+    parser.add_argument('--IMAGE_PAGE_LOAD_TIMEOUT', type=int, help='Time out in second used by the image fetecher, fetecher re-fectech the image after timed out', action='store', default='5')
+    parser.add_argument('--PORTFOLIO_PAGE_LOAD_TIMEOUT', type=int, help='Time out in second used by the portfolio list fetecher, fetecher re-fectech the image list after timed out', action='store', default='10')
+    parser.add_argument('--STUCK_REFRESH_INTERVAL', type=int, help='Time in second that the process wait when a page is unresponsive, i.e, passed the timeout value', action='store', default='3')
+    parser.add_argument('--DEBUG_FLAG', type=bool, help='Toggle Verbose Debug Information Display', action='store', default=False)
+    parser.add_argument('--SHOW_BROWSER', type=bool, help='Toggle browser visibility', action='store', default=False)
+    parser.add_argument('--NUM_OF_THREAD', type=int, help='Number of thread used in the program', action='store', default='6')
+    parser.add_argument('--IMAGE_FETCH_WAIT', type=int, help='Time in second the thread wait per fetecher process', action='store', default='2')
+    return parser
+
+parser = init_Parser()
+args = parser.parse_args()
 
 def getsizes(uri):
     try:
@@ -58,7 +66,7 @@ class InfoType(Enum):
 
 def printDebugInfo(infotag:InfoType, info:str, verbose=False):
     if verbose is False:
-        if DEBUG_FLAG is False: return
+        if args.DEBUG_FLAG is False: return
     if infotag is InfoType.ERROR:
         print("[ERROR] " + info)
     elif infotag is InfoType.DEBUG:
@@ -91,12 +99,12 @@ def initDirectory(username):
 
 def getUrlListFromProfilePage(driver):
     infi_scroll_end_counter = 0
-    imgPortfolio = WebDriverWait(driver, PORTFOLIO_PAGE_LOAD_TIMEOUT).until(EC.visibility_of_element_located((By.XPATH, "/html/body/div[4]/div[3]/div/div"))) # get element contain pictures from portfolio
+    imgPortfolio = WebDriverWait(driver, args.PORTFOLIO_PAGE_LOAD_TIMEOUT).until(EC.visibility_of_element_located((By.XPATH, "/html/body/div[4]/div[3]/div/div"))) # get element contain pictures from portfolio
     last_height = driver.execute_script("return document.body.scrollHeight")
-    while infi_scroll_end_counter < INFINITE_SCROLL_END_CONFIRM_REDUN:
+    while infi_scroll_end_counter < args.INFINITE_SCROLL_END_CONFIRM_REDUN:
         printDebugInfo(InfoType.INFO, "Perform Scrolling Now", verbose=True)
         driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-        time.sleep(INFINITE_SCROLL_LOAD_WAIT_TIME)
+        time.sleep(args.INFINITE_SCROLL_LOAD_WAIT_TIME)
         new_height = driver.execute_script("return document.body.scrollHeight")
         if new_height == last_height:
             infi_scroll_end_counter += 1
@@ -126,21 +134,21 @@ def fetechImgFromUrl(url:str, driver, existingImgList, sfwDir, nsfwDir, waittime
 
             while (not PassedQualityCheck):
                 try:
-                    select_element = WebDriverWait(driver, IMAGE_PAGE_LOAD_TIMEOUT).until(EC.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div[3]/div[1]/div[2]"))) #SFW content
+                    select_element = WebDriverWait(driver, args.IMAGE_PAGE_LOAD_TIMEOUT).until(EC.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div[3]/div[1]/div[2]"))) #SFW content
                 except:
                     printDebugInfo(InfoType.DEBUG, "!!Timed Out Expection!!")
                     driver.refresh()
-                    time.sleep(STUCK_REFRESH_INTERVAL)
+                    time.sleep(args.STUCK_REFRESH_INTERVAL)
                     break
 
                 if select_element.find_elements_by_tag_name('img') == []:
                     ifsfw = False # NSFW Content
                     try:
-                        select_element = WebDriverWait(driver, IMAGE_PAGE_LOAD_TIMEOUT).until(EC.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div[3]/div[1]/div[3]"))) #NSFW content
+                        select_element = WebDriverWait(driver, args.IMAGE_PAGE_LOAD_TIMEOUT).until(EC.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div[3]/div[1]/div[3]"))) #NSFW content
                     except:
                         printDebugInfo(InfoType.DEBUG, "!!Timed Out Expection!!")
                         driver.refresh()
-                        time.sleep(STUCK_REFRESH_INTERVAL)
+                        time.sleep(args.STUCK_REFRESH_INTERVAL)
                         break
 
                 images = select_element.find_elements_by_tag_name('img')
@@ -152,9 +160,9 @@ def fetechImgFromUrl(url:str, driver, existingImgList, sfwDir, nsfwDir, waittime
                     imgSize = getsizes(imgUrl)
                     imgSize = (0,0) if imgSize == None else imgSize # make sure the getsize function error get caught
 
-                    if imgSize[0] > MIN_WIDTH and imgSize[1] > MIN_HEIGHT | recaptureCount > MAX_RECAPTURE_TIME:
+                    if imgSize[0] > args.MIN_WIDTH and imgSize[1] > args.MIN_HEIGHT | recaptureCount > args.MAX_RECAPTURE_TIME:
                         printDebugInfo(InfoType.INFO, ">>>> Image Dimension: " + str(imgSize))
-                        if recaptureCount > MAX_RECAPTURE_TIME:
+                        if recaptureCount > args.MAX_RECAPTURE_TIME:
                             printDebugInfo(InfoType.DEBUG, "Max Recapture Time Reached!!: ")
                             PassedQualityCheck = True
 
@@ -184,7 +192,7 @@ def fetechImgFromUrl(url:str, driver, existingImgList, sfwDir, nsfwDir, waittime
     return successfullyCaptured
 
 def createDriver(showBroser):
-    if SHOW_BROWSER:
+    if args.SHOW_BROWSER:
         mydriver = webdriver.Firefox()
     else:
         options = Options()
@@ -205,24 +213,25 @@ def newImgCaptureBrowserThread(pid, subUrlList, existingImgList, sfwDir, nsfwDir
     mydriver.quit()
     printDebugInfo(InfoType.INFO, "[PID# " + str(pid) + "] CapturedImgCount: " + str(successfulImgCaptureCount) + " FailedImgURL List: " + str(failedCaptureImageURLList), verbose=True)
 
+
 existingImgList = []
-sfwDir, nsfwDir = initDirectory(USER_NAME)
+sfwDir, nsfwDir = initDirectory(args.USER_NAME)
 
-mydriver = createDriver(SHOW_BROWSER)
+mydriver = createDriver(args.SHOW_BROWSER)
 
-mydriver.get('https://500px.com/' + USER_NAME)
+mydriver.get('https://500px.com/' + args.USER_NAME)
 urlListFromProfilePage = getUrlListFromProfilePage(mydriver)
 mydriver.quit()
 
 process_list = []
 urlListLength = len(urlListFromProfilePage)
-subListlen = int(urlListLength / NUM_OF_THREAD)
-for i in range(NUM_OF_THREAD):
-    if i+1 == NUM_OF_THREAD: #end of the list
+subListlen = int(urlListLength / args.NUM_OF_THREAD)
+for i in range(args.NUM_OF_THREAD):
+    if i+1 == args.NUM_OF_THREAD: #end of the list
         subURLlist = urlListFromProfilePage[subListlen*i:]
     else:
         subURLlist = urlListFromProfilePage[subListlen*i:subListlen*(i+1)]
-    process = threading.Thread(name='Test {}'.format(i), target=newImgCaptureBrowserThread, args=(i,subURLlist,existingImgList, sfwDir, nsfwDir, IMAGE_FETCH_WAIT, SHOW_BROWSER))
+    process = threading.Thread(name='Test {}'.format(i), target=newImgCaptureBrowserThread, args=(i,subURLlist,existingImgList, sfwDir, nsfwDir, args.IMAGE_FETCH_WAIT, args.SHOW_BROWSER))
     process.start()
     time.sleep(1)
     printDebugInfo(InfoType.INFO, "Muti Thread Process Initiated", verbose=False)
