@@ -96,7 +96,7 @@ For example, ```https://500px.com/kordan``` has a username that is ```kordan```
 Please always refer to the username from the URL.
 
 Optional argument is defined as follow
-```sh
+```txt
 500pxScraperParallelProcess.py -h
 usage: 500pxScraperParallelProcess.py [-h] [--MIN_WIDTH MIN_WIDTH]
                                       [--MIN_HEIGHT MIN_HEIGHT]
