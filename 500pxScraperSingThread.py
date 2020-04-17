@@ -13,6 +13,9 @@ import time
 import os.path
 from os import path
 import os
+from tqdm import tqdm
+from enum import Enum
+
 
 MIN_WIDTH = 300
 MIN_HEIGHT = 300
@@ -23,6 +26,7 @@ IMAGE_PAGE_LOAD_TIMEOUT = 5
 PORTFOLIO_PAGE_LOAD_TIMEOUT = 10
 USER_NAME = "atomcollider"
 STUCK_REFRESH_INTERVAL = 3
+DEBUG_FLAG = False
 
 dir = os.path.join(os.getcwd(), USER_NAME)
 nsfwDir = os.path.join(dir, "NSFW")
@@ -31,24 +35,7 @@ PassedQualityCheck = False
 infi_scroll_end_counter = 0
 existingImgList = []
 failedCaptureImageURLList = []
-
-
-if not path.exists(dir):
-    os.mkdir(dir)
-
-if not path.exists(nsfwDir):
-    os.mkdir(nsfwDir)
-
-if not path.exists(sfwDir):
-    os.mkdir(sfwDir)
-
-for file in os.listdir(nsfwDir):
-    if file.endswith(".jpg"): existingImgList.append(file)
-
-for file in os.listdir(sfwDir):
-    if file.endswith(".jpg"): existingImgList.append(file)
-
-print("Found " + str(len(existingImgList)) + " Pre-existing Images")
+successfulImgCaptureCount = 0
 
 def getsizes(uri):
     try:
@@ -70,6 +57,41 @@ def getsizes(uri):
     except:
         return None
 
+class InfoType(Enum):
+    ERROR = 1
+    DEBUG = 2
+    INFO = 3
+
+def printDebugInfo(infotag:InfoType, info:str, verbose=False):
+
+    if verbose is False:
+        if DEBUG_FLAG is False: return
+    if infotag is InfoType.ERROR:
+        print("[ERROR] " + info)
+    elif infotag is InfoType.DEBUG:
+        print("[DEBUG] " + info)
+    elif infotag is InfoType.INFO:
+        print("[INFO] " + info)
+
+
+if not path.exists(dir):
+    os.mkdir(dir)
+
+if not path.exists(nsfwDir):
+    os.mkdir(nsfwDir)
+
+if not path.exists(sfwDir):
+    os.mkdir(sfwDir)
+
+for file in os.listdir(nsfwDir):
+    if file.endswith(".jpg"): existingImgList.append(file)
+
+for file in os.listdir(sfwDir):
+    if file.endswith(".jpg"): existingImgList.append(file)
+
+
+printDebugInfo(InfoType.INFO, "Found " + str(len(existingImgList)) + " Pre-existing Images", verbose=True)
+
 
 # options = Options()
 # options.add_argument('--headless')
@@ -82,7 +104,7 @@ imgPortfolio = WebDriverWait(driver, PORTFOLIO_PAGE_LOAD_TIMEOUT).until(EC.visib
 last_height = driver.execute_script("return document.body.scrollHeight")
 
 while infi_scroll_end_counter < INFINITE_SCROLL_END_CONFIRM_REDUN:
-    print("Perform Scrolling Now")
+    printDebugInfo(InfoType.INFO, "Perform Scrolling Now", verbose=True)
     driver.execute_script("window.scrollTo(0, document.body.scrollHeight);")
     time.sleep(INFINITE_SCROLL_LOAD_WAIT_TIME)
     new_height = driver.execute_script("return document.body.scrollHeight")
@@ -90,16 +112,15 @@ while infi_scroll_end_counter < INFINITE_SCROLL_END_CONFIRM_REDUN:
         infi_scroll_end_counter += 1
     last_height = new_height
 
-print("Page End Reached!")
+printDebugInfo(InfoType.INFO, "Page End Reached!", verbose=True)
 
 
 portfolioElement = imgPortfolio.find_elements_by_tag_name('a')
 
 imgUrlsFromProfile = {element.get_attribute('href') for element in portfolioElement if element.get_attribute('href') != None } # get image page url
-print(imgUrlsFromProfile)
 
-for index, url in enumerate(imgUrlsFromProfile):
-    print("Processing URL: " + url)
+for url in tqdm(imgUrlsFromProfile):
+    printDebugInfo(InfoType.INFO, "Processing URL: " + url)
     component = re.match(r"https?:\/\/(.+?)(\/.*)", url)
     metaInfo = component[2].split('/')[1:]
     recaptureCount = 0
@@ -116,7 +137,7 @@ for index, url in enumerate(imgUrlsFromProfile):
                 try:
                     select_element = WebDriverWait(driver, IMAGE_PAGE_LOAD_TIMEOUT).until(EC.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div[3]/div[1]/div[2]"))) #SFW content
                 except:
-                    print("!!Timed Out Expection!!")
+                    printDebugInfo(InfoType.DEBUG, "!!Timed Out Expection!!")
                     driver.refresh()
                     time.sleep(STUCK_REFRESH_INTERVAL)
                     break
@@ -126,39 +147,44 @@ for index, url in enumerate(imgUrlsFromProfile):
                     try:
                         select_element = WebDriverWait(driver, IMAGE_PAGE_LOAD_TIMEOUT).until(EC.visibility_of_element_located((By.XPATH, "/html/body/div[1]/div[3]/div[1]/div[3]"))) #NSFW content
                     except:
-                        print("!!Timed Out Expection!!")
+                        printDebugInfo(InfoType.DEBUG, "!!Timed Out Expection!!")
                         driver.refresh()
                         time.sleep(STUCK_REFRESH_INTERVAL)
                         break
 
                 images = select_element.find_elements_by_tag_name('img')
-                print("DEBUG! ----> " + str(images))
+                printDebugInfo(InfoType.DEBUG, "DEBUG! ----> " + str(images))
 
-                for index, image in enumerate(images):
+                for _, image in enumerate(images):
                     imgUrl = image.get_attribute('src')
-                    print(">>>> Captured Img URL: " + imgUrl)
+                    printDebugInfo(InfoType.INFO, ">>>> Captured Img URL: " + imgUrl)
                     imgSize = getsizes(imgUrl)
                     imgSize = (0,0) if imgSize == None else imgSize # make sure the getsize function error get caught
 
                     if imgSize[0] > MIN_WIDTH and imgSize[1] > MIN_HEIGHT | recaptureCount > MAX_RECAPTURE_TIME:
-                        print(">>>> Image Dimension: " + str(imgSize))
+                        printDebugInfo(InfoType.INFO, ">>>> Image Dimension: " + str(imgSize))
                         if recaptureCount > MAX_RECAPTURE_TIME:
-                            print("Max Recapture Time Reached!!: ")
+                            printDebugInfo(InfoType.DEBUG, "Max Recapture Time Reached!!: ")
                             failedCaptureImageURLList.append(imgUrl)
 
-                        if ifsfw:
-                            request.urlretrieve(imgUrl, os.path.join(sfwDir, title + "_" + id500px + ".jpg"))
-                        else:
-                            request.urlretrieve(imgUrl, os.path.join(nsfwDir, title + "_" + id500px + ".jpg"))
+                        try:
+                            if ifsfw:
+                                request.urlretrieve(imgUrl, os.path.join(sfwDir, title + "_" + id500px + ".jpg"))
+                            else:
+                                request.urlretrieve(imgUrl, os.path.join(nsfwDir, title + "_" + id500px + ".jpg"))
 
-                        PassedQualityCheck = True
+                            PassedQualityCheck = True
+                            successfulImgCaptureCount += 1
+                        except:
+                            printDebugInfo(InfoType.DEBUG, "URL INVALID!!")
+                            pass
                     else:
-                        print(">>>> Quality Check Not Pass, Re-Capturing !!!!!")
+                        printDebugInfo(InfoType.INFO, ">>>> Quality Check Not Pass, Re-Capturing !!!!!")
                         recaptureCount += 1
 
             PassedQualityCheck = False
         else:
-            print("Skiping " + title + "_" + id500px + ".jpg --- Already Exisit!")
+            printDebugInfo(InfoType.INFO, "Skiping " + title + "_" + id500px + ".jpg --- Already Exisit!")
     elif len(metaInfo) == 1:
         pass
     else:
@@ -166,4 +192,6 @@ for index, url in enumerate(imgUrlsFromProfile):
 
 
 driver.quit()
+print("Total of " + str(len(failedCaptureImageURLList)) + "img failed to capture (May Contain Non-Full Res Img)")
+print("Total of " + str(len(successfulImgCaptureCount)) + "img successfully captured!")
 print("Job Complete, Created by Chengming Kevin Zhang 2020")
