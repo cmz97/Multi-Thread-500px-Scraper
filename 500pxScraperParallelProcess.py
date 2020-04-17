@@ -24,11 +24,13 @@ INFINITE_SCROLL_LOAD_WAIT_TIME = 2 #second
 INFINITE_SCROLL_END_CONFIRM_REDUN = 2 # check lenght now change twice
 IMAGE_PAGE_LOAD_TIMEOUT = 5
 PORTFOLIO_PAGE_LOAD_TIMEOUT = 10
-USER_NAME = "atomcollider"
+USER_NAME = "alex_borisov"
 STUCK_REFRESH_INTERVAL = 3
 DEBUG_FLAG = False
 SHOW_BROWSER = True
 NUM_OF_THREAD = 6
+IMAGE_FETCH_WAIT = 2 #Prevent Over Request
+
 
 def getsizes(uri):
     try:
@@ -106,7 +108,7 @@ def getUrlListFromProfilePage(driver):
     imgUrlsFromProfile = list({element.get_attribute('href') for element in portfolioElement if element.get_attribute('href') != None }) # get image page url
     return imgUrlsFromProfile
 
-def fetechImgFromUrl(url:str, driver, existingImgList, sfwDir, nsfwDir):
+def fetechImgFromUrl(url:str, driver, existingImgList, sfwDir, nsfwDir, waittime):
     PassedQualityCheck = False
     printDebugInfo(InfoType.INFO, "Processing URL: " + url)
     component = re.match(r"https?:\/\/(.+?)(\/.*)", url)
@@ -119,6 +121,7 @@ def fetechImgFromUrl(url:str, driver, existingImgList, sfwDir, nsfwDir):
         ifsfw = True
 
         if str(title + "_" + id500px + ".jpg") not in existingImgList:
+            time.sleep(waittime)
             driver.get(url)
             # wait for the select element to become visible
 
@@ -181,27 +184,32 @@ def fetechImgFromUrl(url:str, driver, existingImgList, sfwDir, nsfwDir):
         raise RuntimeError('[Error #1] Unexpected URL format, pls report This Bug on github!')
     return successfullyCaptured
 
-def newImgCaptureBrowserThread(subUrlList, existingImgList, sfwDir, nsfwDir):
+def createDriver(showBroser):
+    if SHOW_BROWSER:
+        mydriver = webdriver.Firefox()
+    else:
+        options = Options()
+        options.add_argument('--headless')
+        mydriver = webdriver.Firefox(options=options)
+    return mydriver
+
+def newImgCaptureBrowserThread(pid, subUrlList, existingImgList, sfwDir, nsfwDir, waittime, showBroser):
     successfulImgCaptureCount = 0
     failedCaptureImageURLList = []
-    mydriver = webdriver.Firefox()
-    for url in tqdm(subUrlList, ascii=true, desc=""):
-        if fetechImgFromUrl(url, mydriver, existingImgList, sfwDir, nsfwDir):
+    mydriver = createDriver(showBroser)
+    for url in tqdm(subUrlList, desc="PID# "+str(pid)):
+        if fetechImgFromUrl(url, mydriver, existingImgList, sfwDir, nsfwDir, waittime):
             successfulImgCaptureCount += 1
         else:
             failedCaptureImageURLList.append(url)
+
     mydriver.quit()
-    return successfulImgCaptureCount, failedCaptureImageURLList
+    printDebugInfo(InfoType.INFO, "[PID# " + str(pid) + "] CapturedImgCount: " + str(successfulImgCaptureCount) + " FailedImgURL List: " + str(failedCaptureImageURLList), verbose=True)
 
 existingImgList = []
 sfwDir, nsfwDir = initDirectory(USER_NAME)
 
-if SHOW_BROWSER:
-    mydriver = webdriver.Firefox()
-else:
-    options = Options()
-    options.add_argument('--headless')
-    mydriver = webdriver.Firefox(options=options)
+mydriver = createDriver(SHOW_BROWSER)
 
 mydriver.get('https://500px.com/' + USER_NAME)
 urlListFromProfilePage = getUrlListFromProfilePage(mydriver)
@@ -215,7 +223,7 @@ for i in range(NUM_OF_THREAD):
         subURLlist = urlListFromProfilePage[subListlen*i:]
     else:
         subURLlist = urlListFromProfilePage[subListlen*i:subListlen*(i+1)]
-    process = threading.Thread(name='Test {}'.format(i), target=newImgCaptureBrowserThread, args=(subURLlist,existingImgList, sfwDir, nsfwDir))
+    process = threading.Thread(name='Test {}'.format(i), target=newImgCaptureBrowserThread, args=(i,subURLlist,existingImgList, sfwDir, nsfwDir, IMAGE_FETCH_WAIT, SHOW_BROWSER))
     process.start()
     time.sleep(1)
     printDebugInfo(InfoType.INFO, "Muti Thread Process Initiated", verbose=False)
@@ -225,6 +233,4 @@ for i in range(NUM_OF_THREAD):
 for thread in process_list:
     thread.join()
 
-# print("Total of " + str(len(failedCaptureImageURLList)) + " img failed to capture (May Contain Non-Full Res Img)")
-# print("Total of " + str(successfulImgCaptureCount - 1) + " img successfully captured (including exisiting, one less because of profile page not a img)!")
-print("Job Complete, Created by Chengming Kevin Zhang 2020")
+print("\n Job Complete, Created by Chengming Kevin Zhang 2020 \n")
