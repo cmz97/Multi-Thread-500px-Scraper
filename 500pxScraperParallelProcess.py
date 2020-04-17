@@ -5,7 +5,6 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
 import urllib.request as request
-import uuid
 from selenium.webdriver.firefox.options import Options
 from PIL import ImageFile
 import re
