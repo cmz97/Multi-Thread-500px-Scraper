@@ -98,18 +98,18 @@ Please always refer to the username from the URL.
 Optional argument is defined as follow
 ```txt
 500pxScraperParallelProcess.py -h
-usage: 500pxScraperParallelProcess.py [-h] [--MIN_WIDTH MIN_WIDTH]
-                                      [--MIN_HEIGHT MIN_HEIGHT]
-                                      [--MAX_RECAPTURE_TIME MAX_RECAPTURE_TIME]
-                                      [--INFINITE_SCROLL_LOAD_WAIT_TIME INFINITE_SCROLL_LOAD_WAIT_TIME]
-                                      [--INFINITE_SCROLL_END_CONFIRM_REDUN INFINITE_SCROLL_END_CONFIRM_REDUN]
-                                      [--IMAGE_PAGE_LOAD_TIMEOUT IMAGE_PAGE_LOAD_TIMEOUT]
-                                      [--PORTFOLIO_PAGE_LOAD_TIMEOUT PORTFOLIO_PAGE_LOAD_TIMEOUT]
-                                      [--STUCK_REFRESH_INTERVAL STUCK_REFRESH_INTERVAL]
-                                      [--DEBUG_FLAG DEBUG_FLAG]
-                                      [--SHOW_BROWSER SHOW_BROWSER]
-                                      [--NUM_OF_THREAD NUM_OF_THREAD]
-                                      [--IMAGE_FETCH_WAIT IMAGE_FETCH_WAIT]
+usage: 500pxScraperParallelProcess.py [-h] [--MIN_WIDTH]
+                                      [--MIN_HEIGHT]
+                                      [--MAX_RECAPTURE_TIME]
+                                      [--INFINITE_SCROLL_LOAD_WAIT_TIME]
+                                      [--INFINITE_SCROLL_END_CONFIRM_REDUN]
+                                      [--IMAGE_PAGE_LOAD_TIMEOUT]
+                                      [--PORTFOLIO_PAGE_LOAD_TIMEOUT]
+                                      [--STUCK_REFRESH_INTERVAL]
+                                      [--DEBUG_FLAG]
+                                      [--SHOW_BROWSER]
+                                      [--NUM_OF_THREAD]
+                                      [--IMAGE_FETCH_WAIT]
                                       USER_NAME
 
 Selenium based mutilthreaded image scraper for 500px.com
