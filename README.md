@@ -7,7 +7,7 @@
 <br />
 <p align="center">
 
-  <h3 align="center">Muti-Threaded 500px Scraper</h3>
+  <h1 align="center">Muti-Threaded 500px Scraper</h1>
 
   <p align="center">
     Selenium based mutilthreaded image scraper for 500px.com
