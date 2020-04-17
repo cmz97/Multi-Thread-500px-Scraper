@@ -15,7 +15,6 @@ from os import path
 import os
 from tqdm import tqdm
 from enum import Enum
-from joblib import Parallel, delayed
 import threading
 
 MIN_WIDTH = 300
@@ -28,7 +27,8 @@ PORTFOLIO_PAGE_LOAD_TIMEOUT = 10
 USER_NAME = "atomcollider"
 STUCK_REFRESH_INTERVAL = 3
 DEBUG_FLAG = False
-SHOW_BROWSER = False
+SHOW_BROWSER = True
+NUM_OF_THREAD = 6
 
 def getsizes(uri):
     try:
@@ -103,7 +103,7 @@ def getUrlListFromProfilePage(driver):
 
     printDebugInfo(InfoType.INFO, "Page End Reached!", verbose=True)
     portfolioElement = imgPortfolio.find_elements_by_tag_name('a')
-    imgUrlsFromProfile = {element.get_attribute('href') for element in portfolioElement if element.get_attribute('href') != None } # get image page url
+    imgUrlsFromProfile = list({element.get_attribute('href') for element in portfolioElement if element.get_attribute('href') != None }) # get image page url
     return imgUrlsFromProfile
 
 def fetechImgFromUrl(url:str, driver, existingImgList, sfwDir, nsfwDir):
@@ -181,10 +181,19 @@ def fetechImgFromUrl(url:str, driver, existingImgList, sfwDir, nsfwDir):
         raise RuntimeError('[Error #1] Unexpected URL format, pls report This Bug on github!')
     return successfullyCaptured
 
+def newImgCaptureBrowserThread(subUrlList, existingImgList, sfwDir, nsfwDir):
+    successfulImgCaptureCount = 0
+    failedCaptureImageURLList = []
+    mydriver = webdriver.Firefox()
+    for url in tqdm(subUrlList, ascii=true, desc=""):
+        if fetechImgFromUrl(url, mydriver, existingImgList, sfwDir, nsfwDir):
+            successfulImgCaptureCount += 1
+        else:
+            failedCaptureImageURLList.append(url)
+    mydriver.quit()
+    return successfulImgCaptureCount, failedCaptureImageURLList
 
 existingImgList = []
-successfulImgCaptureCount = 0
-failedCaptureImageURLList = []
 sfwDir, nsfwDir = initDirectory(USER_NAME)
 
 if SHOW_BROWSER:
@@ -195,18 +204,27 @@ else:
     mydriver = webdriver.Firefox(options=options)
 
 mydriver.get('https://500px.com/' + USER_NAME)
-
-# for url in tqdm(getUrlListFromProfilePage(mydriver)):
-#     if fetechImgFromUrl(url,mydriver, existingImgList,sfwDir, nsfwDir):
-#         successfulImgCaptureCount += 1
-#     else:
-#         failedCaptureImageURLList.append(url)
-
 urlListFromProfilePage = getUrlListFromProfilePage(mydriver)
-runInfo = Parallel(n_jobs=-1)(delayed(fetechImgFromUrl)(url,mydriver, existingImgList,sfwDir, nsfwDir) for url in urlListFromProfilePage)
-
-
 mydriver.quit()
-print("Total of " + str(len(failedCaptureImageURLList)) + " img failed to capture (May Contain Non-Full Res Img)")
-print("Total of " + str(successfulImgCaptureCount - 1) + " img successfully captured (including exisiting, one less because of profile page not a img)!")
+
+process_list = []
+urlListLength = len(urlListFromProfilePage)
+subListlen = int(urlListLength / NUM_OF_THREAD)
+for i in range(NUM_OF_THREAD):
+    if i+1 == NUM_OF_THREAD: #end of the list
+        subURLlist = urlListFromProfilePage[subListlen*i:]
+    else:
+        subURLlist = urlListFromProfilePage[subListlen*i:subListlen*(i+1)]
+    process = threading.Thread(name='Test {}'.format(i), target=newImgCaptureBrowserThread, args=(subURLlist,existingImgList, sfwDir, nsfwDir))
+    process.start()
+    time.sleep(1)
+    printDebugInfo(InfoType.INFO, "Muti Thread Process Initiated", verbose=False)
+    process_list.append(process)
+
+# Wait for all thre<ads to complete
+for thread in process_list:
+    thread.join()
+
+# print("Total of " + str(len(failedCaptureImageURLList)) + " img failed to capture (May Contain Non-Full Res Img)")
+# print("Total of " + str(successfulImgCaptureCount - 1) + " img successfully captured (including exisiting, one less because of profile page not a img)!")
 print("Job Complete, Created by Chengming Kevin Zhang 2020")
