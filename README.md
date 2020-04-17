@@ -87,7 +87,7 @@ git clone https://github.com/cmz97/Multi-Thread-500px-Scraper.git
 <!-- USAGE EXAMPLES -->
 ## Usage
 ```sh
-  python3 500pxScraperParallelProcess 'kordan'
+  python3 ./500pxScraperParallelProcess 'kordan'
 ```
 This will download all the picture from user ```kordan``` to directory ```./kordan```. In which there is two folder named ```./kordan/nsfw``` for image that is NSFW and ```./kordan/sfw``` for image that is SFW
 
