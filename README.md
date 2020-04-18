@@ -43,7 +43,7 @@
 <!-- ABOUT THE PROJECT -->
 ## About The Project
 
-[![Product Name Screen Shot][product-screenshot]](https://example.com)
+[![Product Name Screen Shot][product-screenshot]](https://github.com/cmz97/Multi-Thread-500px-Scraper/blob/master/readmeMedia/cmd.gif)
 
 
 ### Built With
