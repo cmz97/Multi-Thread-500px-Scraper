@@ -1,22 +1,34 @@
+#!/usr/bin/env python3
 from selenium import webdriver
 from selenium.webdriver.support.select import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support import expected_conditions as EC
-import urllib.request as request
 from selenium.webdriver.firefox.options import Options
-from PIL import ImageFile
+
+# import urllib.request as request
+import requests
+from PIL import Image
 import re
 import time
+import os
 import os.path
 from os import path
-import os
 from tqdm import tqdm
 from enum import Enum
 import threading
 import argparse
+from io import BytesIO
 
+
+__author__ = "Chengming Zhang"
+__copyright__ = "Copyright 2020, Chengming Zhang"
+__license__ = "MIT"
+__version__ = "1.0.1"
+__maintainer__ = "Chengming Zhang"
+__email__ = "cmkz97@gmail.com"
+__status__ = "In Progress"
 
 def init_Parser():
     argparse.ArgumentParser(description='Selenium based mutilthreaded image scraper for 500px.com')
@@ -32,32 +44,18 @@ def init_Parser():
     parser.add_argument('--STUCK_REFRESH_INTERVAL', type=int, help='Time in second that the process wait when a page is unresponsive, i.e, passed the timeout value', action='store', default='3')
     parser.add_argument('--DEBUG_FLAG', type=bool, help='Toggle Verbose Debug Information Display', action='store', default=False)
     parser.add_argument('--SHOW_BROWSER', type=bool, help='Toggle browser visibility', action='store', default=False)
-    parser.add_argument('--NUM_OF_THREAD', type=int, help='Number of thread used in the program', action='store', default='6')
-    parser.add_argument('--IMAGE_FETCH_WAIT', type=int, help='Time in second the thread wait per fetecher process', action='store', default='2')
+    parser.add_argument('--NUM_OF_THREAD', type=int, help='Number of thread used in the program', action='store', default='12')
+    parser.add_argument('--IMAGE_FETCH_WAIT', type=int, help='Time in second the thread wait per fetecher process', action='store', default='3')
     return parser
 
 parser = init_Parser()
 args = parser.parse_args()
-
-def getsizes(uri):
-    try:
-        # get file size *and* image size (None if not known)
-        file = request.urlopen(uri)
-        size = file.headers.get("content-length")
-        if size: size = int(size)
-        p = ImageFile.Parser()
-        while 1:
-            data = file.read(1024)
-            if not data:
-                break
-            p.feed(data)
-            if p.image:
-                return p.image.size
-                break
-        file.close()
-        return None
-    except:
-        return None
+HEADERS={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.11 (KHTML, like Gecko) Chrome/23.0.1271.64 Safari/537.11',
+   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+   'Accept-Charset': 'ISO-8859-1,utf-8;q=0.7,*;q=0.3',
+   'Accept-Encoding': 'none',
+   'Accept-Language': 'en-US,en;q=0.8',
+   'Connection': 'keep-alive'}
 
 class InfoType(Enum):
     ERROR = 1
@@ -127,6 +125,10 @@ def fetechImgFromUrl(url:str, driver, existingImgList, sfwDir, nsfwDir, waittime
         title = metaInfo[2]
         ifsfw = True
 
+        #rewrite stable url
+        #1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111
+        url = "https://500px.com/photo/" + id500px + "/" + title + "?ctx_page=1&from=user&user_id=25232133"
+
         if str(title + "_" + id500px + ".jpg") not in existingImgList:
             time.sleep(waittime)
             driver.get(url)
@@ -157,7 +159,12 @@ def fetechImgFromUrl(url:str, driver, existingImgList, sfwDir, nsfwDir, waittime
                 for _, image in enumerate(images):
                     imgUrl = image.get_attribute('src')
                     printDebugInfo(InfoType.INFO, ">>>> Captured Img URL: " + imgUrl)
-                    imgSize = getsizes(imgUrl)
+
+                    myRequest= requests.get(imgUrl,headers=HEADERS)
+                    imgFileBuff = myRequest.content
+                    img = Image.open(BytesIO(imgFileBuff))
+                    imgSize = img.size
+
                     imgSize = (0,0) if imgSize == None else imgSize # make sure the getsize function error get caught
 
                     if imgSize[0] > args.MIN_WIDTH and imgSize[1] > args.MIN_HEIGHT | recaptureCount > args.MAX_RECAPTURE_TIME:
@@ -165,13 +172,14 @@ def fetechImgFromUrl(url:str, driver, existingImgList, sfwDir, nsfwDir, waittime
                         if recaptureCount > args.MAX_RECAPTURE_TIME:
                             printDebugInfo(InfoType.DEBUG, "Max Recapture Time Reached!!: ")
                             PassedQualityCheck = True
-
                         try:
                             if ifsfw:
-                                request.urlretrieve(imgUrl, os.path.join(sfwDir, title + "_" + id500px + ".jpg"))
+                                imageSavePath = os.path.join(sfwDir, title + "_" + id500px + ".jpg")
                             else:
-                                request.urlretrieve(imgUrl, os.path.join(nsfwDir, title + "_" + id500px + ".jpg"))
+                                imageSavePath = os.path.join(nsfwDir, title + "_" + id500px + ".jpg")
 
+                            with open(imageSavePath, 'wb') as file:  # Use file to refer to the file object
+                                file.write(imgFileBuff)
                             PassedQualityCheck = True
                             successfullyCaptured = True
                         except:
