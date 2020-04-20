@@ -57,7 +57,8 @@
 To get a local copy up and running follow these simple steps.
 
 ### Prerequisites
-* firefox
+* **firefox**
+
 Now, it is highly recomended to use a firefox browser for the programs. Therefore, please download the newest version of firefox
 [here](https://www.mozilla.org/en-US/firefox/download/thanks/)
 
@@ -65,12 +66,12 @@ However, you could make it so that the program works with chrome, just follow th
 
 This is an example of how to list things you need to use the software and how to install them.
 
-* Selenium Python
+* **Selenium Python**
 ```sh
 pip3 install selenium
 ```
 
-* geckodriver (Assume you installed firefox)
+* **geckodriver (Assume you installed firefox)**
 
 [Get latest releases](https://github.com/mozilla/geckodriver/releases)
 
@@ -78,12 +79,12 @@ _Selenium requires a driver to interface with the chosen browser. Firefox, for e
 
 More error related to the Selenium, please check out the installation guide in the Selenium website [here](https://selenium-python.readthedocs.io/)
 
-* Python Image Library
+* **Python Image Library**
 ```sh
 pip3 install Pillow
 ```
 
-* tqdm
+* **tqdm**
 ```sh
 pip3 install tqdm
 ```
