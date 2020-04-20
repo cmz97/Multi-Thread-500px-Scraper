@@ -57,18 +57,26 @@
 To get a local copy up and running follow these simple steps.
 
 ### Prerequisites
+* firefox
+Now, it is highly recomended to use a firefox browser for the programs. Therefore, please download the newest version of firefox
+[here](https://www.mozilla.org/en-US/firefox/download/thanks/)
+
+However, you could make it so that the program works with chrome, just follow the guidline in selenium python website. A little of code modification is needed.
 
 This is an example of how to list things you need to use the software and how to install them.
+
 * Selenium Python
 ```sh
 pip3 install selenium
 ```
 
-* geckodriver
+* geckodriver (Assume you installed firefox)
 
 [Get latest releases](https://github.com/mozilla/geckodriver/releases)
 
 _Selenium requires a driver to interface with the chosen browser. Firefox, for example, requires geckodriver, which needs to be installed before the below examples can be run. Make sure it’s in your PATH, e. g., place it in /usr/bin or /usr/local/bin. Failure to observe this step will give you an error selenium.common.exceptions.WebDriverException: Message: ‘geckodriver’ executable needs to be in PATH._
+
+More error related to the Selenium, please check out the installation guide in the Selenium website [here](https://selenium-python.readthedocs.io/)
 
 * Python Image Library
 ```sh
