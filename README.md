@@ -61,7 +61,7 @@ To get a local copy up and running follow these simple steps.
 This is an example of how to list things you need to use the software and how to install them.
 * Selenium Python
 ```sh
-pip install selenium
+pip3 install selenium
 ```
 
 * geckodriver
@@ -72,9 +72,13 @@ _Selenium requires a driver to interface with the chosen browser. Firefox, for e
 
 * Python Image Library
 ```sh
-pip install Pillow
+pip3 install Pillow
 ```
 
+* tqdm
+```sh
+pip3 install tqdm
+```
 
 ### Installation
 
